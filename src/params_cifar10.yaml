@@ -6,6 +6,9 @@ model_names:
   - Standard
   - Wang2023Better_WRN-28-10
 
+norm_threads:
+  - Linf
+  - L2
 #
 dataset_name: cifar10
 nsubset: 500
