@@ -166,7 +166,8 @@ def run_trial(
     """
 
     #
-    resultsDirName = '/home-local2/jongn2.extra.nobkp/results_uncert'
+    norm_thread = config['norm_thread']
+    resultsDirName = f'/home-local2/jongn2.extra.nobkp/results_uncert/{norm_thread}'
     try:
         os.mkdir(resultsDirName)
         print("Results directory ", resultsDirName,  " Created ")
@@ -381,7 +382,7 @@ def run_experiment(params: dict, args: argparse.Namespace) -> None:
         run_trial(config=config, params=params, args=args, num_gpus=gpus_per_trial)
     else:
         reporter = CLIReporter(
-            parameter_columns=["seed", "model_name"],
+            parameter_columns=["seed", "model_name", "norm_thread"],
             # metric_columns=["round"],
         )
 
