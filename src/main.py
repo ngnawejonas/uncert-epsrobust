@@ -21,7 +21,7 @@ from robustbench.utils import load_model
 from cleverhans.torch.attacks.projected_gradient_descent import projected_gradient_descent as pgd
 from cleverhans.torch.attacks.carlini_wagner_l2 import carlini_wagner_l2
 
-from utils import compute_norm, get_dataset, set_seeds
+from utils import compute_norm, set_seeds
 from scores import brier_score, compute_entropy, get_clever_scores, get_min_max_pixel_values, max_probability, quadratic_score
 from tqdm import tqdm
 
