@@ -166,7 +166,7 @@ def run_trial(
     """
 
     #
-    resultsDirName = 'results'
+    resultsDirName = '/home-local2/jongn2.extra.nobkp/results_uncert'
     try:
         os.mkdir(resultsDirName)
         print("Results directory ", resultsDirName,  " Created ")
@@ -200,8 +200,8 @@ def run_trial(
     valid_size = 5000
     train_set, val_set = torch.utils.data.random_split(dataset, [len(dataset)-valid_size, valid_size])
 
-    train_loader = torch.utils.data.DataLoader(train_set, batch_size=128,
-                                            shuffle=True, num_workers=2)
+    # train_loader = torch.utils.data.DataLoader(train_set, batch_size=128,
+    #                                         shuffle=True, num_workers=2)
 
     val_loader = torch.utils.data.DataLoader(val_set, batch_size=128,
                                             shuffle=True, num_workers=2)
@@ -223,7 +223,7 @@ def run_trial(
 
 
     #Load Model
-    model = load_model(model_name=config['model_name'], dataset=config['dataset_name'], threat_model='Linf')
+    model = load_model(model_name=config['model_name'], dataset=config['dataset_name'], threat_model=config['norm_thread'])
     model = model.to(device)
     model.eval()
 
@@ -234,7 +234,7 @@ def run_trial(
     scaled_model.eval()
 
     ## 
-    xlogits_list, xlabels_list = get_logits_list(scaled_model, xsubset_test_loader) 
+    xlogits_list, xlabels_list = get_logits_list(scaled_model, xsubset_test_loader, device=device) 
     preds_confidence = get_probs(xlogits_list)
     entropies = compute_entropy(preds_confidence, 1)
     qscores = quadratic_score(xlabels_list, preds_confidence, 1)
@@ -243,7 +243,7 @@ def run_trial(
     names = ['entropies', 'qscores', 'br_scores', 'max_probs']
     scores = [entropies, qscores, br_scores, max_probs]
     for i, val in enumerate(scores):
-        with open(f'{names[i]}.npy', 'wb') as f:
+        with open(f'{resultsDirName}/{names[i]}.npy', 'wb') as f:
             np.save(f, val)
 
     """## clever score"""
@@ -257,7 +257,7 @@ def run_trial(
                 'radius':0.3,
                 'pool_factor':5}
     clever_scores = get_clever_scores(scaled_model, xsubset_test_loader, **clever_args)
-    with open('clever_scores_inf.npy', 'wb') as f:
+    with open(f'{resultsDirName}/clever_scores_inf.npy', 'wb') as f:
         np.save(f, clever_scores)
 
     clever_args={'min_pixel_value':  minpx,
@@ -268,7 +268,7 @@ def run_trial(
                 'radius':0.5,
                 'pool_factor':5}
     clever_scores = get_clever_scores(scaled_model, xsubset_test_loader, **clever_args)
-    with open('clever_scores_2.npy', 'wb') as f:
+    with open(f'{resultsDirName}/clever_scores_2.npy', 'wb') as f:
         np.save(f, clever_scores)
 
     """## attacks distances"""
@@ -289,9 +289,9 @@ def run_trial(
 
     deepfool_scores_inf = np.array(deepfool_scores_inf)
     deepfool_scores_2 = np.array(deepfool_scores_2)
-    with open('deepfool_inf.npy', 'wb') as f:
+    with open(f'{resultsDirName}/deepfool_inf.npy', 'wb') as f:
         np.save(f, deepfool_scores_inf)
-    with open('deepfool_2.npy', 'wb') as f:
+    with open(f'{resultsDirName}/deepfool_2.npy', 'wb') as f:
         np.save(f, deepfool_scores_2)
 
     pgd_params = {'eps': 0.3, 'eps_iter': 0.001, 'nb_iter': 100, 'norm': np.inf, 'targeted': False, 'rand_init': False}
@@ -309,9 +309,9 @@ def run_trial(
             bim_inf_scores_inf.append(dis)
     bim_inf_scores_inf = np.array(bim_inf_scores_inf)
     bim_inf_scores2 = np.array(bim_inf_scores2)
-    with open('bim_inf_score2.npy', 'wb') as f:
+    with open(f'{resultsDirName}/bim_inf_score2.npy', 'wb') as f:
         np.save(f, bim_inf_scores2)
-    with open('bim_inf_score_inf.npy', 'wb') as f:
+    with open(f'{resultsDirName}/bim_inf_score_inf.npy', 'wb') as f:
         np.save(f, bim_inf_scores_inf)
 
 
@@ -330,9 +330,9 @@ def run_trial(
             bim_2_scores_inf.append(dis)
     bim_2_scores_inf = np.array(bim_2_scores_inf)
     bim_2_scores2 = np.array(bim_2_scores2)
-    with open('bim_2_score2.npy', 'wb') as f:
+    with open(f'{resultsDirName}/bim_2_score2.npy', 'wb') as f:
         np.save(f, bim_2_scores2)
-    with open('bim_2_score_inf.npy', 'wb') as f:
+    with open(f'{resultsDirName}/bim_2_score_inf.npy', 'wb') as f:
         np.save(f, bim_2_scores_inf)
 
     cw_params = {'n_classes':10, 'targeted': False}
@@ -350,9 +350,9 @@ def run_trial(
             cwdistancesinf.append(dis) 
     cwdistances2 = np.array(cwdistances2)
     cwdistancesinf = np.array(cwdistancesinf)
-    with open('cw2_inf.npy', 'wb') as f:
+    with open(f'{resultsDirName}/cw2_inf.npy', 'wb') as f:
         np.save(f, cwdistancesinf)
-    with open('cw2_2.npy', 'wb') as f:
+    with open(f'{resultsDirName}/cw2_2.npy', 'wb') as f:
         np.save(f, cwdistances2)
 
 
@@ -366,6 +366,7 @@ def run_experiment(params: dict, args: argparse.Namespace) -> None:
         "dataset_name": params['dataset_name'],
         "model_name": tune.grid_search(params["model_names"]),
         "seed": tune.grid_search(params["seeds"]),
+        "norm_thread": tune.grid_search(params["norm_threads"]),
     }
     if args.dry_run:
         config = {

@@ -15,8 +15,6 @@ def deepfool(model, x, max_iter=50):
     pred_nx = out.max(1)[1]
 
     i_iter = 0
-    cumul_dis_2 = 0.
-    cumul_dis_inf = 0.
     while pred_nx == initial_label and i_iter < max_iter:
         out[0, pred_nx].backward(retain_graph=True)
         grad_np = nx.grad.data.clone()
