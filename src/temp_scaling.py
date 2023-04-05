@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
-
+from tqdm import tqdm
 
 """# Temp Scaling"""
 
@@ -128,7 +128,7 @@ class _ECELoss(nn.Module):
         return ece
 
 #@title temp optimization
-def get_logits_list(model, val_loader):
+def get_logits_list(model, val_loader, device):
   # collect all the logits and labels for the validation set
   logits_list = []
   labels_list = []
@@ -155,7 +155,7 @@ def temperature_scale(logits, temperature):
     # temperature = self.args.get('temperature', None)
     return torch.div(logits, temperature)
 
-def grid_search_temperature(model, val_loader, Tgrid):
+def grid_search_temperature(model, val_loader, Tgrid, device='cuda'):
   model.to(device)
 
   nll_criterion = nn.CrossEntropyLoss().to(device)
@@ -188,7 +188,7 @@ def grid_search_temperature(model, val_loader, Tgrid):
   return optimal_temp
 
 
-def optimize_temperature(model, val_loader):
+def optimize_temperature(model, val_loader, device='cuda'):
   model.to(device)
 
   nll_criterion = nn.CrossEntropyLoss().to(device)

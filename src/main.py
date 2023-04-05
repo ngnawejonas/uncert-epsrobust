@@ -21,7 +21,7 @@ from robustbench.utils import load_model
 from cleverhans.torch.attacks.projected_gradient_descent import projected_gradient_descent as pgd
 from cleverhans.torch.attacks.carlini_wagner_l2 import carlini_wagner_l2
 
-from main_utils import compute_norm, get_dataset, set_seeds
+from utils import compute_norm, get_dataset, set_seeds
 from scores import brier_score, compute_entropy, get_clever_scores, get_min_max_pixel_values, max_probability, quadratic_score
 from tqdm import tqdm
 
@@ -165,10 +165,6 @@ def run_trial(
     :param args: The program arguments.
     """
 
-    strategy_name_on_file = config['strategy_name'] + \
-        "AdvTrain" if params['advtrain_mode'] else config['strategy_name']
-    ACC_FILENAME = '{}_{}_{}_{}_{}_{}.txt'.format(
-        strategy_name_on_file, params['n_final_labeled'], params['dataset_name'], params['net_arch'], params['n_final_labeled'], 'r'+str(params['repeat']))
     #
     resultsDirName = 'results'
     try:
@@ -179,13 +175,13 @@ def run_trial(
 
     # fix random seed
     set_seeds(config['seed'])
-    if args.dry_run:
-        wandb.init(project=args.project_name, mode="disabled")
-    else:
-        id = 0 if args.no_ray else tune.get_trial_id()
-        exp_name = '{}_run_{}_{}_seed{}'.format(
-            config['dataset_name'], id, config['strategy_name'], config['seed'])
-        wandb.init(project=args.project_name, name=exp_name, config=config)
+    # if args.dry_run:
+    #     wandb.init(project=args.project_name, mode="disabled")
+    # else:
+    #     id = 0 if args.no_ray else tune.get_trial_id()
+    #     exp_name = '{}_run_{}_{}_seed{}'.format(
+    #         config['dataset_name'], id, config['strategy_name'], config['seed'])
+    #     wandb.init(project=args.project_name, name=exp_name, config=config)
     # device
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
