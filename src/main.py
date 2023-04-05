@@ -167,7 +167,8 @@ def run_trial(
 
     #
     norm_thread = config['norm_thread']
-    resultsDirName = f'/home-local2/jongn2.extra.nobkp/results_uncert/{norm_thread}'
+    model_name = config['model_name']
+    resultsDirName = f'/home-local2/jongn2.extra.nobkp/results_uncert/{model_name}_{norm_thread}'
     try:
         os.mkdir(resultsDirName)
         print("Results directory ", resultsDirName,  " Created ")
