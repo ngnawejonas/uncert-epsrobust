@@ -195,7 +195,7 @@ def optimize_temperature(model, val_loader, device='cuda'):
   ece_criterion = _ECELoss().to(device)
 
   # First: collect all the logits and labels for the validation set
-  logits_list, labels_list = get_logits_list(model, val_loader)
+  logits_list, labels_list = get_logits_list(model, val_loader, device=device)
 
   # # Calculate NLL and ECE before temperature scaling
   before_temperature_nll = nll_criterion(logits_list, labels_list).item()
@@ -264,7 +264,7 @@ class ModelWithTemperature(nn.Module):
         return temperature_scale(logits, self.temperature)
 
     # This function probably should live outside of this class, but whatever
-    def set_temperature(self, val_loader=None, temp=None, Tgrid = None):
+    def set_temperature(self, val_loader=None, device=None, temp=None, Tgrid = None):
         """
         Tune the tempearature of the model (using the validation set).
         We're going to set it to optimize NLL.
@@ -275,6 +275,6 @@ class ModelWithTemperature(nn.Module):
           self.temperature = temp #nn.Parameter(val.to(device))
         elif Tgrid is None :
           assert val_loader is not None
-          self.temperature = optimize_temperature(self.model, val_loader)
+          self.temperature = optimize_temperature(self.model, val_loader, device)
         else:
           self.temperature = grid_search_temperature(self.model, val_loader, Tgrid)
