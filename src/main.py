@@ -230,7 +230,7 @@ def run_trial(
 
     ## Temp Scaling
     scaled_model = ModelWithTemperature(model)
-    scaled_model.set_temperature(val_loader)
+    scaled_model.set_temperature(val_loader, device=device)
 
     scaled_model.eval()
 
