@@ -26,7 +26,7 @@ from scores import brier_score, compute_entropy, get_clever_scores, get_min_max_
 from tqdm import tqdm
 
 from temp_scaling import ModelWithTemperature, get_logits_list, get_probs
-
+from autoattack import AutoAttack
 
 
 def parse_args(args: list) -> argparse.Namespace:
@@ -249,114 +249,148 @@ def run_trial(
             np.save(f, val)
 
     """## clever score"""
-    minpx , maxpx = get_min_max_pixel_values(test_loader)
+    # minpx , maxpx = get_min_max_pixel_values(test_loader)
 
-    clever_args={'min_pixel_value':  minpx,
-                'max_pixel_value': maxpx,
-                'nb_batches':20,
-                'batch_size':50,
-                'norm':np.inf,
-                'radius':0.3,
-                'pool_factor':5}
-    clever_scores = get_clever_scores(scaled_model, xsubset_test_loader, **clever_args)
-    with open(f'{resultsDirName}/clever_scores_inf.npy', 'wb') as f:
-        np.save(f, clever_scores)
+    # clever_args={'min_pixel_value':  minpx,
+    #             'max_pixel_value': maxpx,
+    #             'nb_batches':20,
+    #             'batch_size':50,
+    #             'norm':np.inf,
+    #             'radius':0.3,
+    #             'pool_factor':5}
+    # clever_scores = get_clever_scores(scaled_model, xsubset_test_loader, **clever_args)
+    # with open(f'{resultsDirName}/clever_scores_inf.npy', 'wb') as f:
+    #     np.save(f, clever_scores)
 
-    clever_args={'min_pixel_value':  minpx,
-                'max_pixel_value': maxpx,
-                'nb_batches':20,
-                'batch_size':50,
-                'norm':2,
-                'radius':0.5,
-                'pool_factor':5}
-    clever_scores = get_clever_scores(scaled_model, xsubset_test_loader, **clever_args)
-    with open(f'{resultsDirName}/clever_scores_2.npy', 'wb') as f:
-        np.save(f, clever_scores)
+    # clever_args={'min_pixel_value':  minpx,
+    #             'max_pixel_value': maxpx,
+    #             'nb_batches':20,
+    #             'batch_size':50,
+    #             'norm':2,
+    #             'radius':0.5,
+    #             'pool_factor':5}
+    # clever_scores = get_clever_scores(scaled_model, xsubset_test_loader, **clever_args)
+    # with open(f'{resultsDirName}/clever_scores_2.npy', 'wb') as f:
+    #     np.save(f, clever_scores)
 
     """## attacks distances"""
 
-    deepfool_args={'max_iter': 200}
+    # deepfool_args={'max_iter': 200}
 
-    deepfool_scores_inf = []
-    deepfool_scores_2 = []
-    for images, labels in tqdm(xsubset_test_loader):
-        images, labels = images.to(device), labels.to(device)
-        x_adv = deepfool(scaled_model, images, **deepfool_args).detach()
-        with torch.no_grad():
-            attack_success = is_attack_successful(model, images, x_adv)
-            dis = compute_norm((x_adv-images), 2) if attack_success else np.inf
-            deepfool_scores_2.append(dis)
-            dis = compute_norm((x_adv-images), np.inf) if attack_success else np.inf
-            deepfool_scores_inf.append(dis)
+    # deepfool_scores_inf = []
+    # deepfool_scores_2 = []
+    # for images, labels in tqdm(xsubset_test_loader):
+    #     images, labels = images.to(device), labels.to(device)
+    #     x_adv = deepfool(scaled_model, images, **deepfool_args).detach()
+    #     with torch.no_grad():
+    #         attack_success = is_attack_successful(model, images, x_adv)
+    #         dis = compute_norm((x_adv-images), 2) if attack_success else np.inf
+    #         deepfool_scores_2.append(dis)
+    #         dis = compute_norm((x_adv-images), np.inf) if attack_success else np.inf
+    #         deepfool_scores_inf.append(dis)
 
-    deepfool_scores_inf = np.array(deepfool_scores_inf)
-    deepfool_scores_2 = np.array(deepfool_scores_2)
-    with open(f'{resultsDirName}/deepfool_inf.npy', 'wb') as f:
-        np.save(f, deepfool_scores_inf)
-    with open(f'{resultsDirName}/deepfool_2.npy', 'wb') as f:
-        np.save(f, deepfool_scores_2)
+    # deepfool_scores_inf = np.array(deepfool_scores_inf)
+    # deepfool_scores_2 = np.array(deepfool_scores_2)
+    # with open(f'{resultsDirName}/deepfool_inf.npy', 'wb') as f:
+    #     np.save(f, deepfool_scores_inf)
+    # with open(f'{resultsDirName}/deepfool_2.npy', 'wb') as f:
+    #     np.save(f, deepfool_scores_2)
 
-    pgd_params = {'eps': 0.3, 'eps_iter': 0.001, 'nb_iter': 100, 'norm': np.inf, 'targeted': False, 'rand_init': False}
+    # pgd_params = {'eps': 0.3, 'eps_iter': 0.001, 'nb_iter': 100, 'norm': np.inf, 'targeted': False, 'rand_init': False}
 
-    bim_inf_scores2 = []
-    bim_inf_scores_inf = []
-    for images, labels in tqdm(xsubset_test_loader):
-        images, labels = images.to(device), labels.to(device)
-        x_adv = pgd(scaled_model, images, **pgd_params).detach()
-        with torch.no_grad():
-            attack_success = is_attack_successful(scaled_model, images, x_adv)
-            dis = compute_norm((x_adv-images), 2) if attack_success else np.inf
-            bim_inf_scores2.append(dis)
-            dis = compute_norm((x_adv-images), np.inf) if attack_success else np.inf
-            bim_inf_scores_inf.append(dis)
-    bim_inf_scores_inf = np.array(bim_inf_scores_inf)
-    bim_inf_scores2 = np.array(bim_inf_scores2)
-    with open(f'{resultsDirName}/bim_inf_score2.npy', 'wb') as f:
-        np.save(f, bim_inf_scores2)
-    with open(f'{resultsDirName}/bim_inf_score_inf.npy', 'wb') as f:
-        np.save(f, bim_inf_scores_inf)
+    # bim_inf_scores2 = []
+    # bim_inf_scores_inf = []
+    # for images, labels in tqdm(xsubset_test_loader):
+    #     images, labels = images.to(device), labels.to(device)
+    #     x_adv = pgd(scaled_model, images, **pgd_params).detach()
+    #     with torch.no_grad():
+    #         attack_success = is_attack_successful(scaled_model, images, x_adv)
+    #         dis = compute_norm((x_adv-images), 2) if attack_success else np.inf
+    #         bim_inf_scores2.append(dis)
+    #         dis = compute_norm((x_adv-images), np.inf) if attack_success else np.inf
+    #         bim_inf_scores_inf.append(dis)
+    # bim_inf_scores_inf = np.array(bim_inf_scores_inf)
+    # bim_inf_scores2 = np.array(bim_inf_scores2)
+    # with open(f'{resultsDirName}/bim_inf_score2.npy', 'wb') as f:
+    #     np.save(f, bim_inf_scores2)
+    # with open(f'{resultsDirName}/bim_inf_score_inf.npy', 'wb') as f:
+    #     np.save(f, bim_inf_scores_inf)
 
 
-    pgd_params = {'eps': 0.5, 'eps_iter': 0.01, 'nb_iter': 100, 'norm': 2, 'targeted': False, 'rand_init': False}
+    # pgd_params = {'eps': 0.5, 'eps_iter': 0.01, 'nb_iter': 100, 'norm': 2, 'targeted': False, 'rand_init': False}
 
-    bim_2_scores2 = []
-    bim_2_scores_inf = []
-    for images, labels in tqdm(xsubset_test_loader):
-        images, labels = images.to(device), labels.to(device)
-        x_adv = pgd(scaled_model, images, **pgd_params).detach()
-        with torch.no_grad():
-            attack_success = is_attack_successful(scaled_model, images, x_adv)
-            dis = compute_norm((x_adv-images), 2) if attack_success else np.inf
-            bim_2_scores2.append(dis)
-            dis = compute_norm((x_adv-images), np.inf) if attack_success else np.inf
-            bim_2_scores_inf.append(dis)
-    bim_2_scores_inf = np.array(bim_2_scores_inf)
-    bim_2_scores2 = np.array(bim_2_scores2)
-    with open(f'{resultsDirName}/bim_2_score2.npy', 'wb') as f:
-        np.save(f, bim_2_scores2)
-    with open(f'{resultsDirName}/bim_2_score_inf.npy', 'wb') as f:
-        np.save(f, bim_2_scores_inf)
+    # bim_2_scores2 = []
+    # bim_2_scores_inf = []
+    # for images, labels in tqdm(xsubset_test_loader):
+    #     images, labels = images.to(device), labels.to(device)
+    #     x_adv = pgd(scaled_model, images, **pgd_params).detach()
+    #     with torch.no_grad():
+    #         attack_success = is_attack_successful(scaled_model, images, x_adv)
+    #         dis = compute_norm((x_adv-images), 2) if attack_success else np.inf
+    #         bim_2_scores2.append(dis)
+    #         dis = compute_norm((x_adv-images), np.inf) if attack_success else np.inf
+    #         bim_2_scores_inf.append(dis)
+    # bim_2_scores_inf = np.array(bim_2_scores_inf)
+    # bim_2_scores2 = np.array(bim_2_scores2)
+    # with open(f'{resultsDirName}/bim_2_score2.npy', 'wb') as f:
+    #     np.save(f, bim_2_scores2)
+    # with open(f'{resultsDirName}/bim_2_score_inf.npy', 'wb') as f:
+    #     np.save(f, bim_2_scores_inf)
 
+    # cw_params = {'n_classes':10, 'targeted': False}
+
+    # cwdistances2 = []
+    # cwdistancesinf = []
+    # for images, labels in tqdm(xsubset_test_loader):
+    #     images, labels = images.to(device), labels.to(device)
+    #     x_adv = carlini_wagner_l2(scaled_model, images, **cw_params).detach()
+    #     with torch.no_grad():
+    #         attack_success = is_attack_successful(scaled_model, images, x_adv)
+    #         dis = compute_norm((x_adv-images), 2) if attack_success else np.inf
+    #         cwdistances2.append(dis)
+    #         dis = compute_norm((x_adv-images), np.inf) if attack_success else np.inf
+    #         cwdistancesinf.append(dis) 
+    # cwdistances2 = np.array(cwdistances2)
+    # cwdistancesinf = np.array(cwdistancesinf)
+    # with open(f'{resultsDirName}/cw2_inf.npy', 'wb') as f:
+    #     np.save(f, cwdistancesinf)
+    # with open(f'{resultsDirName}/cw2_2.npy', 'wb') as f:
+    #     np.save(f, cwdistances2)
     cw_params = {'n_classes':10, 'targeted': False}
 
-    cwdistances2 = []
-    cwdistancesinf = []
-    for images, labels in tqdm(xsubset_test_loader):
-        images, labels = images.to(device), labels.to(device)
-        x_adv = carlini_wagner_l2(scaled_model, images, **cw_params).detach()
-        with torch.no_grad():
-            attack_success = is_attack_successful(scaled_model, images, x_adv)
-            dis = compute_norm((x_adv-images), 2) if attack_success else np.inf
-            cwdistances2.append(dis)
-            dis = compute_norm((x_adv-images), np.inf) if attack_success else np.inf
-            cwdistancesinf.append(dis) 
-    cwdistances2 = np.array(cwdistances2)
-    cwdistancesinf = np.array(cwdistancesinf)
-    with open(f'{resultsDirName}/cw2_inf.npy', 'wb') as f:
-        np.save(f, cwdistancesinf)
-    with open(f'{resultsDirName}/cw2_2.npy', 'wb') as f:
-        np.save(f, cwdistances2)
+    acc = 0.
+    adv_acc = 0.
 
+    xxsubset_test_loader = torch.utils.data.DataLoader(subset_test_set, batch_size=1)
+
+    for images, labels in tqdm(xxsubset_test_loader):
+        images, labels = images.to(device), labels.to(device)
+        x_adv = carlini_wagner_l2(model, images, **cw_params).detach()
+        with torch.no_grad():
+            out = model(images)
+            out_adv = model(x_adv)
+            _, y_pred = torch.max(out.data, 1)
+            _, y_adv = torch.max(out_adv.data, 1)
+            acc += (labels == y_pred).sum()
+            adv_acc +=(labels ==y_adv).sum()
+    total=len(xxsubset_test_loader.dataset)
+    print(acc, adv_acc, total, acc/total, adv_acc/total) 
+
+    x_test =[]
+    y_test =[]
+    i = 0
+    for x, y in xsubset_test_loader:
+        if i == 0:
+            x_test = x
+            y_test = y
+            i += 1
+        else:
+            x_test = torch.cat((x_test, x), 0)
+            y_test = torch.cat((y_test, y), 0)
+    adversary = AutoAttack(model, norm='L2', eps=8/255, version='standard')
+    x_adv, y_adv = adversary.run_standard_evaluation(x_test, y_test, return_labels=True)
+
+    
 
 def run_experiment(params: dict, args: argparse.Namespace) -> None:
     """Run the experiment using Ray Tune.
