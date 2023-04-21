@@ -11,5 +11,5 @@ norm_threads:
   - L2
 #
 dataset_name: cifar10
-nsubset: 10000
+nsubset: 500
 max_iter: 100
