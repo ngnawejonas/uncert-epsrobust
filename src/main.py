@@ -169,11 +169,13 @@ def run_trial(
     norm_thread = config['norm_thread']
     model_name = config['model_name']
     resultsDirName = f'/home-local2/jongn2.extra.nobkp/results_uncert/{model_name}_{norm_thread}'
-    try:
-        os.mkdir(resultsDirName)
+    if not os.path.exists(resultsDirName):
+        os.makedirs(resultsDirName)
+    # try:
+    #     os.mkdir(resultsDirName)
         print("Results directory ", resultsDirName,  " Created ")
-    except FileExistsError:
-        print("Results directory ", resultsDirName,  " already exists")
+    # except FileExistsError:
+    #     print("Results directory ", resultsDirName,  " already exists")
 
     # fix random seed
     set_seeds(config['seed'])
